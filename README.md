@@ -1,7 +1,5 @@
 # SheepTier
 
-Site communautaire Minecraft : classement, mini-jeux, boutique et vidéos.
+Application Next.js / Netlify / Supabase.
 
-Application Next.js hébergée sur Netlify, base de données et stockage Supabase.
-
-Les variables privées sont configurées uniquement sur Netlify. Aucun mot de passe ou clé serveur ne doit être ajouté au dépôt.
+Installation : Node.js 24, npm ci, npm run build. Variables privées uniquement dans Netlify, jamais dans GitHub.

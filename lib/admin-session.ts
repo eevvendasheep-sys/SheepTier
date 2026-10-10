@@ -1,0 +1,8 @@
+import {env} from '@/lib/netlify-env';
+const cookie='__Host-sheeptier-admin';
+const encode=(data:Uint8Array)=>btoa(String.fromCharCode(...data)).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+const decode=(data:string)=>Uint8Array.from(atob(data.replace(/-/g,'+').replace(/_/g,'/')),c=>c.charCodeAt(0));
+async function key(){if(!env.ADMIN_SESSION_SECRET||env.ADMIN_SESSION_SECRET.length<32)throw new Error('Administration non configurée.');return crypto.subtle.importKey('raw',new TextEncoder().encode(env.ADMIN_SESSION_SECRET),{name:'HMAC',hash:'SHA-256'},false,['sign','verify']);}
+export const logoutCookie=`${cookie}=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0`;
+export async function adminCookie(){const payload=encode(new TextEncoder().encode(JSON.stringify({sub:'cloudflare-owner',exp:Date.now()+8*3600000,nonce:crypto.randomUUID()})));const sig=encode(new Uint8Array(await crypto.subtle.sign('HMAC',await key(),new TextEncoder().encode(payload))));return `${cookie}=${payload}.${sig}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=28800`;}
+export async function readAdminSession(cookies:string){try{const raw=cookies.split(';').map(p=>p.trim()).find(p=>p.startsWith(cookie+'='))?.slice(cookie.length+1);if(!raw||raw.length>1024)return null;const [payload,sig,extra]=raw.split('.');if(!payload||!sig||extra)return null;if(!await crypto.subtle.verify('HMAC',await key(),decode(sig),new TextEncoder().encode(payload)))return null;const data=JSON.parse(new TextDecoder().decode(decode(payload)));if(data.sub!=='cloudflare-owner'||!Number.isFinite(data.exp)||data.exp<=Date.now())return null;return {userId:'cloudflare-owner',displayName:env.ADMIN_USERNAME||'Berger',email:'proprietaire@sheeptier.local',fullName:null};}catch{return null;}}

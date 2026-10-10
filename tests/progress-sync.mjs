@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';import {readFile} from 'node:fs/promises';import ts from 'typescript';
+const source=ts.transpileModule(await readFile('lib/progress-sync.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;const {reconcileProgress}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const p=n=>({'sheeptier-run-best':n}),base={id:'a',revision:2,data:JSON.stringify(p(100))};
+let r=reconcileProgress('a',null,p(999),{revision:2,progress:p(100)});assert.equal(r.conflict,false);assert.deepEqual(r.progress,p(100));
+r=reconcileProgress('a',base,p(150),{revision:2,progress:p(100)});assert.equal(r.conflict,false);assert.deepEqual(r.progress,p(150),'Offline changes must survive unchanged cloud revision');
+r=reconcileProgress('a',base,p(100),{revision:3,progress:p(200)});assert.equal(r.conflict,false);assert.deepEqual(r.progress,p(200),'Other device restore');
+r=reconcileProgress('a',base,p(150),{revision:3,progress:p(200)});assert.equal(r.conflict,true,'Independent edits require a choice');
+r=reconcileProgress('a',base,p(200),{revision:3,progress:p(200)});assert.equal(r.conflict,false,'Same snapshot is not a conflict');
+r=reconcileProgress('a',{...base,pending:{revision:2,data:JSON.stringify(p(150))}},p(160),{revision:3,progress:p(150)});assert.equal(r.conflict,false);assert.deepEqual(r.progress,p(160),'A close after accepted save must preserve later edits');
+r=reconcileProgress('b',base,p(150),{revision:3,progress:p(200)});assert.equal(r.conflict,false);assert.deepEqual(r.progress,p(200),'Switching accounts must not mix saves');
+console.log('Verified: restore on another device, offline edits, simultaneous-device conflict, duplicate snapshots, closing during save and isolated account switches.');

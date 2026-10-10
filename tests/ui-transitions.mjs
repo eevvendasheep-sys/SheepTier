@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {readFile} from 'node:fs/promises';
+import ts from 'typescript';
+const source=ts.transpileModule(await readFile('lib/ui-transitions.ts','utf8'),{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+const {animatedLink,transitionFor}=await import('data:text/javascript;base64,'+Buffer.from(source).toString('base64'));
+const base='https://sheep.test/';
+for(const path of ['/jeux','/plateforme','/videos','/discord','/demo','/admin'])assert.equal(animatedLink(path,base).pathname,path);
+for(const href of ['/#classement','https://discord.gg/test','/login','/signin-with-chatgpt','/signout-with-chatgpt','/api/clips','javascript:alert(1)','mailto:berger@example.test'])assert.equal(animatedLink(href,base),null,href);
+assert.equal(animatedLink('/videos#clip','https://sheep.test/videos'),null);
+assert.equal(transitionFor('/jeux').theme,'arcade');assert.equal(transitionFor('/plateforme').theme,'arcade');assert.equal(transitionFor('/videos').theme,'videos');assert.equal(transitionFor('/discord').theme,'discord');assert.equal(transitionFor('/demo').theme,'demo');assert.equal(transitionFor('/admin').theme,'admin');assert.equal(transitionFor('/').theme,'ranking');
+console.log('Verified transition destinations; external, authentication, API and same-page links keep their normal behavior.');

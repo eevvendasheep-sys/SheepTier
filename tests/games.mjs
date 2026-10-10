@@ -1,0 +1,21 @@
+import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
+import ts from 'typescript';
+const compile=source=>ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ESNext}}).outputText;
+const rewardsUrl='data:text/javascript;base64,'+Buffer.from(compile(await readFile('lib/sheep-rewards.ts','utf8'))).toString('base64');
+const js=compile(await readFile('lib/games.ts','utf8')).replace('"./sheep-rewards"',JSON.stringify(rewardsUrl));
+const {newRunner,jumpRunner,stepRunner,newFarm,addWheat,buyUpgrade,upgradeCost,farmClick,farmRate,advanceFarm,parseFarm,makeMemoryDeck}=await import('data:text/javascript;base64,'+Buffer.from(js).toString('base64'));
+const collision=newRunner();collision.obstacles=[{x:110,skin:0}];stepRunner(collision,1/60,0);assert.equal(collision.over,true);
+const jumping=newRunner();jumping.obstacles=[{x:230,skin:0}];jumpRunner(jumping);
+for(let frame=0;frame<50;frame++)stepRunner(jumping,1/60,1,()=>.5);
+assert.equal(jumping.over,false);assert.equal(jumping.y,0);
+const inAir=newRunner();jumpRunner(inAir);stepRunner(inAir,.02,1);const velocity=inAir.velocity;jumpRunner(inAir);assert.equal(inAir.velocity,velocity);
+const spawning=newRunner();for(let frame=0;frame<200;frame++)stepRunner(spawning,1/60,3,()=>.99);
+assert.ok(spawning.obstacles.length>=1);assert.ok(spawning.obstacles.every(o=>o.skin===2));
+assert.deepEqual(buyUpgrade(newFarm(),0),newFarm());
+let farm=addWheat(newFarm(),1000);farm=buyUpgrade(farm,0);assert.equal(farm.wheat,985);assert.equal(farmClick(farm),3);assert.ok(upgradeCost(farm,0)>15);
+farm=buyUpgrade(farm,1);assert.equal(farmRate(farm),1);const produced=advanceFarm(farm,10);assert.equal(produced.wheat-farm.wheat,10);assert.equal(produced.total-farm.total,10);
+assert.equal(advanceFarm(farm,1e8).wheat-farm.wheat,28800);assert.equal(advanceFarm(farm,-5).wheat,farm.wheat);
+const invalid=parseFarm({wheat:NaN,total:Infinity,levels:[-1,'3',1e10,null,2.9]});assert.equal(invalid.wheat,0);assert.equal(invalid.total,0);assert.deepEqual(invalid.levels,[0,0,1000,0,2]);
+for(let i=0;i<100;i++){const deck=makeMemoryDeck();assert.equal(deck.length,16);for(let v=0;v<8;v++)assert.equal(deck.filter(x=>x===v).length,2);}
+console.log('Verified: collisions, jump clearance, no double jump, ranked skin indices, purchases, passive/offline production, saved-state validation and memory pairs.');

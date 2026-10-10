@@ -1,0 +1,2 @@
+const tables=new Set(['site_state','site_owner','community_levels','community_clips','account_limits','player_accounts','player_sessions']);
+export function translateSQL(source:string){let index=0;const ignore=/^INSERT OR IGNORE INTO /i.test(source);let sql=source.replace(/^INSERT OR IGNORE INTO /i,'INSERT INTO ');sql=sql.replace(/'(?:''|[^'])*'|\b[A-Za-z_][A-Za-z0-9_]*\b|\?/g,token=>token.startsWith("'")?token:token==='?'?'$'+(++index):tables.has(token)?'sheeptier.'+token:token);if(ignore)sql+=' ON CONFLICT DO NOTHING';return sql;}

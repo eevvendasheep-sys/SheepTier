@@ -1,0 +1,11 @@
+import {parseFarm} from './games';
+import {parseRewards} from './sheep-rewards';
+import {parseAppearance} from './appearance';
+import {validateLevel} from './platformer';
+export const progressKeys=['sheeptier-wheat-farm','sheeptier-run-best','sheeptier-memory-best','sheeptier-sheep-rewards','sheeptier-appearance','sheeptier-platform-draft','sheeptier-platform-wins','sheeptier-button-sounds'] as const;
+export type CloudProgress=Partial<Record<typeof progressKeys[number],unknown>>;
+export function cleanProgress(value:unknown):CloudProgress{if(!value||typeof value!=='object'||Array.isArray(value))throw Error('Sauvegarde invalide.');const input=value as Record<string,any>,out:CloudProgress={};const pos=(v:unknown)=>typeof v==='number'&&Number.isFinite(v)&&v>=0;
+ for(const key of progressKeys){if(!Object.hasOwn(input,key))continue;const v=input[key];switch(key){case 'sheeptier-wheat-farm':if(!v||!v.farm||!pos(v.savedAt))throw Error('Ferme invalide.');out[key]={farm:parseFarm(v.farm),savedAt:Math.min(v.savedAt,Number.MAX_SAFE_INTEGER)};break;case 'sheeptier-run-best':case 'sheeptier-memory-best':if(!pos(v))throw Error('Record invalide.');out[key]=Math.min(1e15,Math.floor(v));break;case 'sheeptier-sheep-rewards':out[key]=parseRewards(v);break;case 'sheeptier-appearance':out[key]=parseAppearance(v);break;case 'sheeptier-platform-draft':if(!v||typeof v.title!=='string'||typeof v.author!=='string')throw Error('Brouillon invalide.');out[key]={level:validateLevel(v.level,false),title:v.title.slice(0,60),author:v.author.slice(0,24)};break;case 'sheeptier-platform-wins':out[key]=Array.isArray(v)?[...new Set(v.filter(id=>['prairie','desert','sky'].includes(id)))]:[];break;case 'sheeptier-button-sounds':if(!['on','off'].includes(v))throw Error('Préférence invalide.');out[key]=v;}}
+ return out;}
+export function readLocalProgress():CloudProgress{const data:CloudProgress={};for(const key of progressKeys){const raw=localStorage.getItem(key);if(raw!==null){try{data[key]=key==='sheeptier-button-sounds'?raw:JSON.parse(raw);}catch{}}}return cleanProgress(data);}
+export function applyProgress(data:CloudProgress){for(const key of progressKeys){if(Object.hasOwn(data,key))localStorage.setItem(key,key==='sheeptier-button-sounds'?String(data[key]):JSON.stringify(data[key]));else localStorage.removeItem(key);}}
