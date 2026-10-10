@@ -1,3 +1,4 @@
+import {isSameSiteRequest} from '@/lib/request-origin';
 import {env} from '@/lib/netlify-env';
 import bcrypt from 'bcryptjs';
 export class AccountError extends Error{constructor(message:string,public status=400){super(message);}}
@@ -5,7 +6,7 @@ export const privateHeaders={'Cache-Control':'private, no-store'};
 export const cookieName='__Host-sheeptier-player';
 export const randomToken=()=>Array.from(crypto.getRandomValues(new Uint8Array(32)),v=>v.toString(16).padStart(2,'0')).join('');
 export async function digest(value:string){return Array.from(new Uint8Array(await crypto.subtle.digest('SHA-256',new TextEncoder().encode(value))),v=>v.toString(16).padStart(2,'0')).join('');}
-export function sameOrigin(r:Request){if(r.headers.get('origin')!==new URL(r.url).origin)throw new AccountError('Origine invalide.',403);}
+export function sameOrigin(r:Request){if(!isSameSiteRequest(r))throw new AccountError('Origine invalide.',403);}
 export function username(value:unknown){if(typeof value!=='string'||! /^[a-zA-Z0-9_]{3,24}$/.test(value))throw new AccountError('Pseudo : 3 à 24 lettres, chiffres ou tirets bas.');return value;}
 export function password(value:unknown){if(typeof value!=='string'||value.length<12||new TextEncoder().encode(value).length>72)throw new AccountError('Mot de passe : au moins 12 caractères, maximum 72 octets.');return value;}
 export type PlayerAccount={id:string;username:string;password_hash:string;recovery_hash:string;progress:string;revision:number};

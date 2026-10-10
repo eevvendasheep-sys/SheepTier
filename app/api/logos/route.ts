@@ -1,3 +1,4 @@
+import {isSameSiteRequest} from '@/lib/request-origin';
 import { env } from "@/lib/netlify-env";
 import { getChatGPTUser } from "@/app/chatgpt-auth";
 import { readDocument, ownerId } from "@/lib/store";
@@ -12,7 +13,7 @@ export async function GET(request: Request) {
 }
 export async function POST(request: Request) {
   try {
-    if (request.headers.get('origin') !== new URL(request.url).origin) return Response.json({ error: "Origine invalide." }, { status: 403 });
+    if (!isSameSiteRequest(request)) return Response.json({ error: "Origine invalide." }, { status: 403 });
     const user = await getChatGPTUser();
     if (!user) return Response.json({ error: "Connexion requise." }, { status: 401 });
     const { document } = await readDocument();

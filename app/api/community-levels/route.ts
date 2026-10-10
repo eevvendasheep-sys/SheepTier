@@ -1,3 +1,4 @@
+import {isSameSiteRequest} from '@/lib/request-origin';
 import { env } from "@/lib/netlify-env";
 import { getChatGPTUser } from "@/app/chatgpt-auth";
 import { ownerId } from "@/lib/store";
@@ -6,7 +7,7 @@ export const dynamic = "force-dynamic";
 const uuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const noStore = { "Cache-Control": "no-store" };
 class LevelError extends Error { constructor(message: string, public status=400){super(message);} }
-function sameOrigin(request: Request) { if(request.headers.get("origin")!==new URL(request.url).origin)throw new LevelError("Origine de requête invalide.",403); }
+function sameOrigin(request: Request) { if(!isSameSiteRequest(request))throw new LevelError("Origine de requête invalide.",403); }
 function clean(value: unknown, label: string, max: number) {
   if(typeof value!=="string")throw new LevelError(`${label} manquant.`);
   const text=value.trim().replace(/\s+/g," ");

@@ -1,3 +1,4 @@
+import {isSameSiteRequest} from '@/lib/request-origin';
 import { getChatGPTUser } from "@/app/chatgpt-auth";
 import { changeDocument, readDocument, ownerId } from "@/lib/store";
 import { applyOperation, APIError, type Operation } from "@/lib/model";
@@ -7,7 +8,7 @@ export async function POST(request: Request) {
     const raw = await request.text();
     if (raw.length > 20000) throw new APIError("Données trop volumineuses.", 413);
     const operation: Operation = JSON.parse(raw);
-    if (operation.operation !== 'select' && request.headers.get('origin') !== new URL(request.url).origin)
+    if (operation.operation !== 'select' && !isSameSiteRequest(request))
       throw new APIError("Origine de requête invalide.", 403);
     const user = await getChatGPTUser();
     const owner = await ownerId();

@@ -1,3 +1,4 @@
+import {isSameSiteRequest} from '@/lib/request-origin';
 import {env,storage} from '@/lib/netlify-env';
 import {digest,randomToken} from '@/lib/player-account';
 import {getChatGPTUser} from '@/app/chatgpt-auth';
@@ -8,7 +9,7 @@ const uuid=/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 class ClipError extends Error{constructor(message:string,public status=400){super(message);}}
 const fail=(m:string,s=400):never=>{throw new ClipError(m,s);};
 async function admin(){const u=await getChatGPTUser();return !!u&&u.userId===await ownerId();}
-function origin(r:Request){if(r.headers.get('origin')!==new URL(r.url).origin)fail('Origine invalide.',403);}
+function origin(r:Request){if(!isSameSiteRequest(r))fail('Origine invalide.',403);}
 function id(r:Request){const v=new URL(r.url).searchParams.get('id');if(!v||!uuid.test(v))fail('Clip invalide.');return v!;}
 function error(e:unknown){return Response.json({error:e instanceof ClipError?e.message:'Le service vidéo est momentanément indisponible.'},{status:e instanceof ClipError?e.status:503,headers});}
 type Row={id:string;title:string;author:string;status:string;object_key:string;mime:string;size:number;created_at:number};
