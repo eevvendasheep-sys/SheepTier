@@ -23,7 +23,7 @@ const color = (value: unknown) => {
 function safeURL(value: unknown, internal = false) {
   const result = text(value, 2048);
   if (!result) return null;
-  if (internal && (/^\/api\/logos\?path=/.test(result) || /^\/gamemodes\/[a-z]+\.svg$/.test(result))) return result;
+  if (internal && ((/^\/api\/logos\?path=/.test(result) || /^\/api\/logos\/[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/.test(result)) || /^\/gamemodes\/[a-z]+\.svg$/.test(result))) return result;
   let url: URL;
   try { url = new URL(result); } catch { return fail("Lien invalide."); }
   if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) fail("Le lien doit utiliser HTTP ou HTTPS.");
@@ -50,7 +50,7 @@ export function applyOperation(doc: SiteDocument, query: Operation, userId: stri
     } else if (query.table === 'user_roles') {
       if (!userId) throw new APIError("Connecte-toi pour consulter tes droits.", 401);
       rows = doc.users.filter(u => role === 'admin' || u.id === userId).map(u => ({ user_id: u.id, role: u.id === owner ? 'admin' : 'viewer' }));
-    } else rows = doc[query.table as keyof SiteDocument];
+    } else rows = doc[query.table as keyof SiteDocument] as any[];
     rows = rows.filter(matches).map(row => ({ ...row }));
     if (query.sort) { const key = query.sort; rows.sort((a, b) => typeof a[key] === 'number' ? a[key] - b[key] : String(a[key] ?? '').localeCompare(String(b[key] ?? ''))); }
     return query.one ? rows[0] ?? null : rows;

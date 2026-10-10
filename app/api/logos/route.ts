@@ -1,16 +1,10 @@
+import {serveLogo} from '@/lib/logo-storage';
 import {isSameSiteRequest} from '@/lib/request-origin';
 import { env } from "@/lib/netlify-env";
 import { getChatGPTUser } from "@/app/chatgpt-auth";
 import { readDocument, ownerId } from "@/lib/store";
 export const dynamic = "force-dynamic";
-export async function GET(request: Request) {
-  const path = new URL(request.url).searchParams.get('path');
-  if (!path || !/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/.test(path)) return new Response('Introuvable', { status: 404 });
-  const file = await env.BUCKET?.get('logos/' + path);
-  if (!file) return new Response('Introuvable', { status: 404 });
-  return new Response(file.body, { headers: { 'Content-Type': file.httpMetadata?.contentType || 'application/octet-stream',
-    'Cache-Control': 'public, max-age=86400', 'X-Content-Type-Options': 'nosniff' } });
-}
+export async function GET(request:Request){return serveLogo(new URL(request.url).searchParams.get('path')||'');}
 export async function POST(request: Request) {
   try {
     if (!isSameSiteRequest(request)) return Response.json({ error: "Origine invalide." }, { status: 403 });

@@ -1,0 +1,8 @@
+import { env } from '@/lib/netlify-env';
+import { readAdminSession, logoutCookie } from '@/lib/admin-session';
+import { readDocument, changeDocument } from '@/lib/store';
+import { sameOrigin, readInput, AccountError, accountError, privateHeaders } from '@/lib/player-account';
+export const dynamic='force-dynamic';
+async function candidate(){const result=await env.DB!.prepare('SELECT id, username FROM player_accounts ORDER BY created_at LIMIT 2').all<{id:string;username:string}>();if(result.results.length!==1)throw new AccountError('Il faut exactement un compte joueur pour cette association. Aucun compte ne sera choisi automatiquement.',409);return result.results[0];}
+export async function GET(r:Request){try{const {document}=await readDocument();if(document.admin_player_id)return Response.json({bound:true},{headers:privateHeaders});if(!await readAdminSession(r.headers.get('cookie')||''))throw new AccountError('Connexion administrateur requise.',401);const a=await candidate();return Response.json({bound:false,username:a.username},{headers:privateHeaders});}catch(e){return accountError(e);}}
+export async function POST(r:Request){try{sameOrigin(r);if(!await readAdminSession(r.headers.get('cookie')||''))throw new AccountError('Connexion administrateur requise.',401);const input=await readInput(r,1000);const a=await candidate();if(input.username!==a.username)throw new AccountError('Confirme le compte affiché.');await changeDocument(doc=>{if(doc.admin_player_id)throw new AccountError('Le compte propriétaire est déjà associé.',409);doc.admin_player_id=a.id;});return Response.json({ok:true},{headers:{...privateHeaders,'Set-Cookie':logoutCookie}});}catch(e){return accountError(e);}}

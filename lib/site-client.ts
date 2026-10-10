@@ -54,7 +54,7 @@ const client = {
           return { error: response.ok ? null : { message: result.error || "Import impossible." } };
         } catch { return { error: { message: "Import interrompu. Réessaie." } }; }
       },
-      getPublicUrl(path: string) { return { data: { publicUrl: "/api/logos?path=" + encodeURIComponent(path) } }; },
+      getPublicUrl(path: string) { return { data: { publicUrl: "/api/logos/" + path.split("/").map(encodeURIComponent).join("/") } }; },
     }),
   },
 };

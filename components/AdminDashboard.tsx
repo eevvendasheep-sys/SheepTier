@@ -1,4 +1,5 @@
 "use client";
+import OwnerAccountBinding from "./OwnerAccountBinding";
 import CommunityVideos from "./CommunityVideos";
 
 import { FormEvent, useEffect, useMemo, useState } from "react";
@@ -90,7 +91,7 @@ export default function AdminDashboard() {
   }
 
   async function logout() {
-    window.location.assign("/signout-with-chatgpt?return_to=%2F");
+    await getSiteClient()?.auth.signOut();
   }
 
   async function resolvePlayer() {
@@ -210,7 +211,7 @@ export default function AdminDashboard() {
       return;
     }
     const ext = file.name.split(".").pop() || "png";
-    const path = `${modeId}/${Date.now()}.${ext}`;
+    const path = `${modeId}/${crypto.randomUUID()}.${ext}`;
     const { error: upErr } = await client.storage.from("gamemode-logos").upload(path, file, { upsert: true });
     if (upErr) return notify(upErr.message);
     const { data } = client.storage.from("gamemode-logos").getPublicUrl(path);
@@ -366,7 +367,7 @@ export default function AdminDashboard() {
                   <div><strong>{g.name}</strong><small>/{g.slug}</small><p>{g.description||"Aucune description"}</p></div>
                   <div className="modeActions">
                     <button className="uploadButton" disabled={!canEdit} onClick={()=>setEditMode({...g})}>Modifier</button>
-                    <label className="uploadButton"><Upload size={15}/> Logo<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={!canEdit} onChange={e=>e.target.files?.[0]&&uploadModeLogo(g.id,e.target.files[0])}/></label>
+                    <label className="uploadButton"><Upload size={15}/> Logo<input type="file" accept="image/png,image/jpeg,image/webp,image/gif" disabled={!canEdit} onChange={e=>{const file=e.currentTarget.files?.[0];e.currentTarget.value="";if(file)void uploadModeLogo(g.id,file);}}/></label>
                     <button className="iconDanger" disabled={!canEdit} onClick={()=>deleteMode(g.id)}><Trash2 size={15}/></button>
                   </div>
                   {editMode?.id === g.id && <form className="stackForm recordEditor" onSubmit={saveMode}>
@@ -432,7 +433,7 @@ export default function AdminDashboard() {
           <section className="adminPanel accessPanel">
             <div className="panelHeading"><div><span className="sectionKicker">Sécurité</span><h2>Comptes & permissions</h2></div><Shield size={20}/></div>
             <div className="accessInfo">Le classement est ouvert aux visiteurs. Le compte propriétaire est le seul autorisé à ouvrir l’administration et à modifier le site. Les autres comptes restent en lecture seule.</div>
-            <div className="accessList">
+            <OwnerAccountBinding/><div className="accessList">
               {profiles.length ? profiles.map(p=><div className="accessRow" key={p.id}><div className="userAvatar">{(p.email||"?")[0].toUpperCase()}</div><div><strong>{p.display_name||p.email||"Utilisateur"}</strong><small>{p.email}</small></div><span>{p.role === "admin" ? "Propriétaire" : "Lecture seule"}</span></div>) : <div className="emptyState">Aucun autre compte à afficher.</div>}
             </div>
           </section>

@@ -1,0 +1,2 @@
+import {env} from '@/lib/netlify-env';
+export async function serveLogo(path:string){if(!/^[a-zA-Z0-9_-]+\/[a-zA-Z0-9_.-]+$/.test(path)||path.split('/')[1]==='..')return new Response('Introuvable',{status:404});const file=await env.BUCKET?.get('logos/'+path);if(!file)return new Response('Introuvable',{status:404});return new Response(file.body,{headers:{'Content-Type':file.httpMetadata?.contentType||'application/octet-stream','Cache-Control':'no-store','CDN-Cache-Control':'no-store','Netlify-CDN-Cache-Control':'no-store','X-Content-Type-Options':'nosniff'}});}
