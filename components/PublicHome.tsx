@@ -28,7 +28,11 @@ export default function PublicHome() {
     const client = getSiteClient();
     if (!client) return;
 
+    let stopped = false, loading = false;
     async function load() {
+      if (stopped || loading || document.visibilityState === "hidden") return;
+      loading = true;
+      try {
       const [s, g, t, p, r] = await Promise.all([
         client.from("site_settings").select("*").eq("id", 1).maybeSingle(),
         client.from("gamemodes").select("*").eq("enabled", true).order("sort_order"),
@@ -38,14 +42,21 @@ export default function PublicHome() {
       ]);
       const firstError = [s, g, t, p, r].find(result => result.error)?.error;
       if (firstError) throw new Error(firstError.message);
+      if (stopped) return;
       if (s.data) setSettings(s.data as SiteSettings);
       if (g.data) setModes(g.data as GameMode[]);
       if (t.data) setTiers(t.data as Tier[]);
       if (p.data) setPlayers(p.data as Player[]);
       if (r.data) setRankings(r.data as Ranking[]);
       setIsDemo(false);
+      setLoadError("");
+      } finally { loading = false; }
     }
-    load().catch(() => setLoadError("Le classement n’a pas pu être chargé. Actualise la page pour réessayer."));
+    const refresh = () => { load().catch(() => { if (!stopped) setLoadError("Le classement n’a pas pu être chargé. Actualise la page pour réessayer."); }); };
+    refresh();
+    const timer = window.setInterval(refresh, 15000);
+    document.addEventListener("visibilitychange", refresh);
+    return () => { stopped = true; window.clearInterval(timer); document.removeEventListener("visibilitychange", refresh); };
   }, []);
 
   const tierMap = useMemo(() => Object.fromEntries(tiers.map(t => [t.id, t])), [tiers]);
@@ -218,3 +229,4 @@ export default function PublicHome() {
     </main>
   );
 }
+

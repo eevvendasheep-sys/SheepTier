@@ -2,6 +2,7 @@ import { env } from "@/lib/netlify-env";
 import { demoSettings, demoModes, demoTiers } from "./demo";
 import type { SiteSettings, GameMode, Tier, Player, Ranking, Profile } from "./types";
 export type SiteDocument = {
+  discord_rank?: { guild_id: string; token_hash: string; recent: { id: string; actor: string; player: string; mode: string; tier: string; at: string }[] };
   village?: import('./village').VillageWorld;
   village_revision?: number;
   admin_player_id?: string;
