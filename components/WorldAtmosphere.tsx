@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Palette, RotateCcw, Volume2, VolumeX, X } from "lucide-react";
-import { defaultAppearance, parseAppearance, woolColors, worldThemes, seasonalThemes, universeThemes, type Appearance, type WorldTheme } from "@/lib/appearance";
+import { defaultAppearance, parseAppearance, rankingFrames, woolColors, worldThemes, seasonalThemes, universeThemes, type Appearance, type WorldTheme } from "@/lib/appearance";
 import { availableSkins, importGameRewards, rewardEvent, allSheepSkins, shopSkins, type SheepSkin } from "@/lib/sheep-rewards";
 import { SheepSprite } from "./SheepSprite";
 import { UniverseScene } from "./UniverseScene";
@@ -40,11 +40,13 @@ export default function WorldAtmosphere() {
       const theme = (event as CustomEvent<{ theme?: WorldTheme }>).detail?.theme;
       if (worldThemes.some(t => t.id === theme)) setAppearance(current => ({ ...current, theme: theme! }));
     };
+    const dressRanking = () => { setCustomizing(true); setTimeout(()=>document.getElementById("ranking-frame-options")?.scrollIntoView({block:"start",behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"instant":"smooth"}),80); };
+    window.addEventListener("sheeptier-open-ranking-frame", dressRanking);
     window.addEventListener(rewardEvent, refresh);
     window.addEventListener("storage", refresh);
     window.addEventListener("sheeptier-open-skins", open);
     window.addEventListener("sheeptier-set-theme", chooseTheme);
-    return () => { window.removeEventListener(rewardEvent, refresh); window.removeEventListener("storage", refresh); window.removeEventListener("sheeptier-open-skins", open); window.removeEventListener("sheeptier-set-theme", chooseTheme); };
+    return () => { window.removeEventListener("sheeptier-open-ranking-frame", dressRanking); window.removeEventListener(rewardEvent, refresh); window.removeEventListener("storage", refresh); window.removeEventListener("sheeptier-open-skins", open); window.removeEventListener("sheeptier-set-theme", chooseTheme); };
   }, []);
   useEffect(() => {
     if (!rewardNotice) return;
@@ -53,6 +55,7 @@ export default function WorldAtmosphere() {
   }, [rewardNotice]);
   useEffect(() => {
     if (!preferencesLoaded) return;
+    document.documentElement.dataset.rankingFrame = appearance.frame;
     document.documentElement.dataset.worldTheme = appearance.theme;
     document.documentElement.dataset.worldMotion = appearance.animated ? "on" : "off";
     document.documentElement.style.setProperty("--sheep-wool", appearance.wool);
@@ -110,7 +113,7 @@ export default function WorldAtmosphere() {
     }}>
       <div className="appearanceHeading"><div><span className="sectionKicker">Ton petit monde</span><h2 id="appearance-title">Décor & moutons</h2></div><button autoFocus className="appearanceClose" aria-label="Fermer la personnalisation" onClick={() => setCustomizing(false)}><X size={20} /></button></div>
       <p className="appearanceIntro">Choisis ton ambiance. Tes préférences restent sur cet appareil.</p>
-      <h3>Le paysage</h3>
+      <section id="ranking-frame-options" className="rankingFrameOptions"><h3>Les bordures du classement <span>8 cosmétiques gratuits</span></h3><p className="skinExplanation">Habille ton classement sans changer les joueurs ni leurs points. Ton choix est sauvegardé avec tes préférences.</p><div className="rankingFrameChoices">{rankingFrames.map(frame=><button key={frame.id} className={`rankingFrameChoice framePreview-${frame.id} ${appearance.frame===frame.id?"selected":""}`} aria-pressed={appearance.frame===frame.id} onClick={()=>setAppearance(current=>({...current,frame:frame.id}))}><span className="frameMiniature" aria-hidden="true"><span>{frame.icon}</span><SheepSprite skin="classic"/><i/><i/></span><strong>{frame.name}</strong><small>{appearance.frame===frame.id?"✓ Équipée":frame.detail}</small></button>)}</div></section><h3>Le paysage</h3>
       <div className="themeChoices">{seasonalThemes.map(theme => <button key={theme.id} className={`themeChoice ${appearance.theme === theme.id ? "selected" : ""}`} aria-pressed={appearance.theme === theme.id} onClick={() => setAppearance(current => ({ ...current, theme: theme.id }))}>
         <span className={`themePreview preview-${theme.id}`} aria-hidden="true"><i /><b /></span><strong>{theme.name}</strong><small>{theme.detail}</small>
       </button>)}</div>

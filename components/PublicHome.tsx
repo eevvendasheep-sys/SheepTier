@@ -4,7 +4,7 @@ import CommunityNav from "./CommunityNav";
 import { useEffect, useMemo, useState } from "react";
 import { Search, ShieldCheck, Sparkles, Trophy, Users, LogIn, ExternalLink, ChevronRight } from "lucide-react";
 import { BrandMark } from "./BrandMark";
-import { WorldEntrance, NoteBlock } from "./WorldExperience";
+import { NoteBlock } from "./WorldExperience";
 import { demoModes, demoPlayers, demoRankings, demoSettings, demoTiers } from "@/lib/demo";
 import { getSiteClient, hasSiteConnection } from "@/lib/site-client";
 import type { GameMode, Player, Ranking, SiteSettings, Tier } from "@/lib/types";
@@ -65,7 +65,6 @@ export default function PublicHome() {
 
   return (
     <main style={{ "--accent": settings.accent_color } as React.CSSProperties}>
-      <WorldEntrance name={settings.site_name} />
       <header className="topbar container">
         <div className="worldBrand"><NoteBlock /><a href="/" className="brandLink"><BrandMark name={settings.site_name} /></a></div>
         <CommunityNav/>
@@ -79,11 +78,55 @@ export default function PublicHome() {
         </div>
       )}
 
+      <section id="classement" className="rankingSection container pastureRanking" aria-labelledby="world-arrival">
+        <div className="rankingCrest" aria-hidden="true"><BrandMark compact/><span>LA PRAIRIE DES CHAMPIONS</span><BrandMark compact/></div>
+        <div className="sectionHeading">
+          <div>
+            <span className="sectionKicker">Le troupeau entre en compétition</span>
+            <h1 id="world-arrival" tabIndex={-1}>Le classement <em>{settings.site_name}</em></h1>
+          </div>
+          <div className="searchBox"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher un joueur..."/></div>
+        </div>
+
+        <div className="rankingToolbar"><p><Users size={14}/><strong>{players.length}</strong> joueurs <span>·</span> <Trophy size={14}/><strong>{totalRankings}</strong> tiers attribués</p><button className="rankingDressButton" onClick={()=>window.dispatchEvent(new CustomEvent("sheeptier-open-ranking-frame"))}><Sparkles size={15}/> Habiller le classement</button></div>
+        <div className="filterBar" aria-label="Filtrer le classement par gamemode">
+          <button className={mode==="all" ? "active":""} onClick={()=>setMode("all")}>Général</button>
+          {modes.map(g => <button key={g.id} className={mode===g.id?"active":""} onClick={()=>setMode(g.id)}>{g.logo_url && <img src={g.logo_url} alt=""/>}{g.name}</button>)}
+        </div>
+
+        <div className="leaderboard">
+          <div className="tableHead">
+            <span>#</span><span>Joueur</span><span>Région</span><span>Tiers</span><span>Points</span>
+          </div>
+          {rows.map((row, i) => (
+            <button key={row.player.id} className="playerRow" onClick={()=>setSelected(row.player)}>
+              <span className={`position p${i+1}`}>{i+1}</span>
+              <span className="playerIdentity">
+                <img src={avatar(row.player.minecraft_uuid)} alt=""/>
+                <span><strong>{row.player.username}</strong><small>Voir le profil</small></span>
+              </span>
+              <span><span className="regionBadge">{row.player.region || "—"}</span></span>
+              <span className="tierStack">
+                {row.rankings.length ? row.rankings.slice(0, 5).map(r => {
+                  const t = r.tier_id ? tierMap[r.tier_id] : null;
+                  const gm = modes.find(g=>g.id===r.gamemode_id);
+                  return t ? <span key={r.gamemode_id} className="tierChip" style={{"--tier":t.color} as React.CSSProperties} title={`${gm?.name || ""} — ${t.label}`}>{gm?.logo_url && <img src={gm.logo_url} alt=""/>}{t.code}</span> : null;
+                }) : <span className="muted">Non classé</span>}
+              </span>
+              <span className="points">{row.total}<small>pts</small></span>
+            </button>
+          ))}
+          {loadError && <div className="emptyState" role="alert">{loadError}</div>}
+          {!loadError && !rows.length && <div className="emptyState">{players.length ? "Aucun joueur ne correspond à cette recherche." : "Le classement démarre bientôt. Ajoute tes premiers joueurs depuis l’administration."}</div>}
+        </div>
+      </section>
+
+
       <section className="hero container">
         <div className="heroCopy">
           <div className="eyebrow"><span className="dot"/> Ranking Minecraft • Communautaire</div>
           <span className="worldCaption">UN MONDE DE BLOCS. UNE COMMUNAUTÉ.</span>
-          <h1 id="world-arrival" tabIndex={-1}>{settings.hero_title || "Chaque combat"}<br/><em>{settings.hero_highlight || "laisse une trace."}</em></h1>
+          <h2 className="homePresentationTitle">{settings.hero_title || "Chaque combat"}<br/><em>{settings.hero_highlight || "laisse une trace."}</em></h2>
           <p>{settings.tagline}</p>
           <div className="heroActions">
             <a href="#classement" className="primaryButton">Voir le classement <ChevronRight size={18}/></a>
@@ -124,47 +167,6 @@ export default function PublicHome() {
               <ChevronRight size={18}/>
             </button>
           ))}
-        </div>
-      </section>
-
-      <section id="classement" className="rankingSection container">
-        <div className="sectionHeading">
-          <div>
-            <span className="sectionKicker">Leaderboard</span>
-            <h2>Le classement {settings.site_name}</h2>
-          </div>
-          <div className="searchBox"><Search size={17}/><input value={query} onChange={e=>setQuery(e.target.value)} placeholder="Rechercher un joueur..."/></div>
-        </div>
-
-        <div className="filterBar">
-          <button className={mode==="all" ? "active":""} onClick={()=>setMode("all")}>Overall</button>
-          {modes.map(g => <button key={g.id} className={mode===g.id?"active":""} onClick={()=>setMode(g.id)}>{g.logo_url && <img src={g.logo_url} alt=""/>}{g.name}</button>)}
-        </div>
-
-        <div className="leaderboard">
-          <div className="tableHead">
-            <span>#</span><span>Joueur</span><span>Région</span><span>Tiers</span><span>Points</span>
-          </div>
-          {rows.map((row, i) => (
-            <button key={row.player.id} className="playerRow" onClick={()=>setSelected(row.player)}>
-              <span className={`position p${i+1}`}>{i+1}</span>
-              <span className="playerIdentity">
-                <img src={avatar(row.player.minecraft_uuid)} alt=""/>
-                <span><strong>{row.player.username}</strong><small>Voir le profil</small></span>
-              </span>
-              <span><span className="regionBadge">{row.player.region || "—"}</span></span>
-              <span className="tierStack">
-                {row.rankings.length ? row.rankings.slice(0, 5).map(r => {
-                  const t = r.tier_id ? tierMap[r.tier_id] : null;
-                  const gm = modes.find(g=>g.id===r.gamemode_id);
-                  return t ? <span key={r.gamemode_id} className="tierChip" style={{"--tier":t.color} as React.CSSProperties} title={`${gm?.name || ""} — ${t.label}`}>{gm?.logo_url && <img src={gm.logo_url} alt=""/>}{t.code}</span> : null;
-                }) : <span className="muted">Non classé</span>}
-              </span>
-              <span className="points">{row.total}<small>pts</small></span>
-            </button>
-          ))}
-          {loadError && <div className="emptyState" role="alert">{loadError}</div>}
-          {!loadError && !rows.length && <div className="emptyState">{players.length ? "Aucun joueur ne correspond à cette recherche." : "Le classement démarre bientôt. Ajoute tes premiers joueurs depuis l’administration."}</div>}
         </div>
       </section>
 

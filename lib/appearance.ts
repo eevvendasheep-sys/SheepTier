@@ -45,11 +45,23 @@ export const woolColors = [
   { name: "Marron", color: "#856043" }, { name: "Vert", color: "#5c7734" },
   { name: "Rouge", color: "#b8443e" }, { name: "Noir", color: "#303337" }
 ];
-export type Appearance = { theme: WorldTheme; wool: string; animated: boolean; skin: SheepSkin };
-export const defaultAppearance: Appearance = { theme: "classic", wool: "#fffdf0", animated: true, skin: "classic" };
+export const rankingFrames = [
+  {id:"prairie",name:"Prairie",detail:"Herbe et barrières de berger",icon:"🌿"},
+  {id:"wool",name:"Laine douce",detail:"Un cocon blanc et moelleux",icon:"🐑"},
+  {id:"diamond",name:"Diamant",detail:"Cristaux turquoise et éclats",icon:"💎"},
+  {id:"flowers",name:"Prairie fleurie",detail:"Fleurs roses et petites abeilles",icon:"🌸"},
+  {id:"royal",name:"Berger royal",detail:"Or, couronnes et laine précieuse",icon:"👑"},
+  {id:"galaxy",name:"Mouton cosmique",detail:"Étoiles et constellations",icon:"✨"},
+  {id:"halloween",name:"Bêê citrouille",detail:"Citrouilles et laine ensorcelée",icon:"🎃"},
+  {id:"christmas",name:"Noël au pâturage",detail:"Guirlandes et neige",icon:"🎄"}
+] as const;
+export type RankingFrame = typeof rankingFrames[number]["id"];
+export type Appearance = { frame: RankingFrame; theme: WorldTheme; wool: string; animated: boolean; skin: SheepSkin };
+export const defaultAppearance: Appearance = { frame: "prairie", theme: "classic", wool: "#fffdf0", animated: true, skin: "classic" };
 export function parseAppearance(value: unknown): Appearance {
   const input = value && typeof value === "object" ? value as Partial<Appearance> : {};
   return {
+    frame: rankingFrames.some(frame => frame.id === input.frame) ? input.frame! : "prairie",
     skin: allSheepSkins.some(skin => skin.id === input.skin) ? input.skin! : "classic",
     theme: worldThemes.some(theme => theme.id === input.theme) ? input.theme! : "classic",
     wool: typeof input.wool === "string" && /^#[0-9a-f]{6}$/i.test(input.wool) ? input.wool.toLowerCase() : defaultAppearance.wool,
