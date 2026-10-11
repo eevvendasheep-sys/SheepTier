@@ -2,6 +2,8 @@ import { env } from "@/lib/netlify-env";
 import { demoSettings, demoModes, demoTiers } from "./demo";
 import type { SiteSettings, GameMode, Tier, Player, Ranking, Profile } from "./types";
 export type SiteDocument = {
+  village?: import('./village').VillageWorld;
+  village_revision?: number;
   admin_player_id?: string;
   site_settings: SiteSettings[]; gamemodes: GameMode[]; tiers: Tier[];
   players: Player[]; rankings: Ranking[]; users: Profile[];
@@ -45,3 +47,4 @@ export async function registerUser(user: { userId: string; email: string; displa
       role: user.userId === owner ? "admin" : "viewer" });
   });
 }
+

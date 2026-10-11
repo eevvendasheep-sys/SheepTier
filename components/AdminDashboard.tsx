@@ -1,4 +1,5 @@
 "use client";
+import VillageEditor from "./VillageEditor";
 import OwnerAccountBinding from "./OwnerAccountBinding";
 import CommunityVideos from "./CommunityVideos";
 
@@ -9,7 +10,7 @@ import { demoModes, demoPlayers, demoRankings, demoSettings, demoTiers } from "@
 import { getSiteClient, hasSiteConnection } from "@/lib/site-client";
 import type { GameMode, Player, Profile, Ranking, Role, SiteSettings, Tier } from "@/lib/types";
 
-type Tab = "overview" | "players" | "modes" | "tiers" | "branding" | "access" | "videos";
+type Tab = "overview" | "players" | "modes" | "tiers" | "branding" | "access" | "videos" | "village";
 
 const head = (uuid: string) => `https://mc-heads.net/avatar/${uuid}/72`;
 
@@ -296,6 +297,7 @@ export default function AdminDashboard() {
         <NavButton active={tab==="modes"} icon={<Gamepad2 size={18}/>} onClick={()=>setTab("modes")}>Gamemodes</NavButton>
         <NavButton active={tab==="tiers"} icon={<BadgePlus size={18}/>} onClick={()=>setTab("tiers")}>Tiers & points</NavButton>
         <div className="sideLabel">Site</div>
+        {isAdmin && <NavButton active={tab==="village"} icon={<Brush size={18}/>} onClick={()=>setTab("village")}>Le Village</NavButton>}
         {isAdmin && <NavButton active={tab==="videos"} icon={<Shield size={18}/>} onClick={()=>setTab("videos")}>Validation des vidéos</NavButton>}
         <NavButton active={tab==="branding"} icon={<Brush size={18}/>} onClick={()=>setTab("branding")}>Identité & contenu</NavButton>
         {isAdmin && <NavButton active={tab==="access"} icon={<UserCog size={18}/>} onClick={()=>setTab("access")}>Accès & rôles</NavButton>}
@@ -311,6 +313,7 @@ export default function AdminDashboard() {
           <a href="/" target="_blank" className="ghostButton">Voir le site ↗</a>
         </div>
 
+        {tab==="village" && isAdmin && <VillageEditor/>}
         {tab==="videos" && isAdmin && <CommunityVideos moderation/>}
 
         {!canEdit && <div className="permissionWarning"><Shield size={18}/><span>Ton compte est en lecture seule. Un administrateur doit te donner le rôle “éditeur” ou “admin”.</span></div>}
@@ -447,7 +450,7 @@ export default function AdminDashboard() {
 function NavButton({active,icon,onClick,children}:{active:boolean;icon:React.ReactNode;onClick:()=>void;children:React.ReactNode}) {
   return <button className={`navButton ${active?"active":""}`} onClick={onClick}>{icon}<span>{children}</span></button>
 }
-function tabTitle(tab:Tab){return ({overview:"Vue d'ensemble",players:"Joueurs & rankings",modes:"Gamemodes",tiers:"Tiers & points",branding:"Identité & contenu",access:"Accès & rôles",videos:"Validation des vidéos"})[tab]}
+function tabTitle(tab:Tab){return ({overview:"Vue d'ensemble",players:"Joueurs & rankings",modes:"Gamemodes",tiers:"Tiers & points",branding:"Identité & contenu",access:"Accès & rôles",videos:"Validation des vidéos",village:"Le Village"})[tab]}
 function Overview({players,modes,tiers,rankings,setTab}:{players:Player[];modes:GameMode[];tiers:Tier[];rankings:Ranking[];setTab:(t:Tab)=>void}) {
   const ranked=new Set(rankings.map(r=>r.player_id)).size;
   const total=rankings.reduce((s,r)=>s+r.points,0);
@@ -458,3 +461,4 @@ function Overview({players,modes,tiers,rankings,setTab}:{players:Player[];modes:
   </div>
 }
 function Stat({icon,value,label}:{icon:React.ReactNode;value:number;label:string}){return <div className="statCard"><span>{icon}</span><strong>{value}</strong><small>{label}</small></div>}
+

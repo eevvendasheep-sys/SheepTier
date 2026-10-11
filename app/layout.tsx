@@ -5,6 +5,7 @@ import "./seasons.css";
 import "./games.css";
 import "./platformer.css";
 import "./community.css";
+import "./village.css";
 import "./transitions.css";
 import PlayerProgress from "@/components/PlayerProgress";
 import SheepCompanion from "@/components/SheepCompanion";
@@ -23,3 +24,4 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
     </html>
   );
 }
+
