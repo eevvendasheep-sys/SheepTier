@@ -1,3 +1,4 @@
+import {clientIP} from '@/lib/client-ip';
 import {isSameSiteRequest} from '@/lib/request-origin';
 import {env,storage} from '@/lib/netlify-env';
 import {digest,randomToken} from '@/lib/player-account';
@@ -32,7 +33,7 @@ const clean=(v:unknown,max:number)=>{if(typeof v!=='string')fail('Texte invalide
 const title=clean(input.title,80),author=clean(input.author,24),size=input.size,mime=input.mime;
 if(!Number.isSafeInteger(size)||size<16||size>20*1024*1024||!['video/mp4','video/webm'].includes(mime))fail('MP4 ou WebM, 20 Mo maximum.');
 if(!uuid.test(input.deviceId))fail('Identifiant invalide.');
-const hash=await digest('SheepTier-clips:'+(r.headers.get('x-nf-client-connection-ip')||input.deviceId)),now=Date.now(),clipId=crypto.randomUUID(),key='clips/'+clipId,token=randomToken();
+const hash=await digest('SheepTier-clips:'+(clientIP(r)||input.deviceId)),now=Date.now(),clipId=crypto.randomUUID(),key='clips/'+clipId,token=randomToken();
 const inserted=await env.DB.prepare("INSERT INTO community_clips (id,title,author,status,object_key,mime,size,created_at,publisher_hash,upload_token_hash) SELECT ?,?,?,'uploading',?,?,?,?,?,? WHERE (SELECT COUNT(*) FROM community_clips WHERE publisher_hash = ? AND created_at > ?) < 3 AND NOT EXISTS (SELECT 1 FROM community_clips WHERE publisher_hash = ? AND created_at > ?) AND (SELECT COUNT(*) FROM community_clips) < 500").bind(clipId,title,author,key,mime,size,now,hash,await digest(token),hash,now-86400000,hash,now-120000).run();
 if(inserted.meta.changes!==1)fail('Attends 2 minutes entre deux clips, maximum 3 par jour. La galerie peut aussi être pleine.',429);
 const {data,error:uploadError}=await storage().createSignedUploadUrl(key,{upsert:false});
@@ -41,3 +42,4 @@ return Response.json({id:clipId,token,uploadURL:data!.signedUrl},{status:201,hea
 }catch(e){return error(e);}}
 export async function PATCH(r:Request){try{origin(r);if(!await admin())fail('Seul le propriétaire peut valider un clip.',403);const raw=await r.text();if(raw.length>256)fail('Requête invalide.');let input;try{input=JSON.parse(raw);}catch{fail('Requête invalide.');}if(!['approved','pending'].includes(input.status))fail('Statut invalide.');const result=await env.DB!.prepare("UPDATE community_clips SET status = ? WHERE id = ? AND status IN ('pending','approved')").bind(input.status,id(r)).run();if(result.meta.changes!==1)fail('Clip introuvable.',404);return Response.json({updated:true},{headers});}catch(e){return error(e);}}
 export async function DELETE(r:Request){try{origin(r);if(!await admin())fail('Seul le propriétaire peut retirer un clip.',403);const clip=await env.DB!.prepare('SELECT object_key FROM community_clips WHERE id = ?').bind(id(r)).first<Row>();if(!clip)fail('Clip introuvable.',404);await env.DB!.prepare('DELETE FROM community_clips WHERE id = ?').bind(id(r)).run();await env.BUCKET!.delete(clip!.object_key);return Response.json({deleted:true},{headers});}catch(e){return error(e);}}
+

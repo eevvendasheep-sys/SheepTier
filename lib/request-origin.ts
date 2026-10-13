@@ -1,4 +1,4 @@
-// Netlify proxies can present an internal URL to Next.js. Trust only explicit site origins.
+// Hosting proxies can present an internal URL. Trust only this deployment's explicit origins.
 export function isSameSiteRequest(request: Request): boolean {
   const origin = request.headers.get('origin');
   if (!origin || request.headers.get('sec-fetch-site') === 'cross-site') return false;
@@ -10,6 +10,11 @@ export function isSameSiteRequest(request: Request): boolean {
       if (!value) continue;
       try { const url = new URL(value); if (url.protocol === 'https:' && !url.username && !url.password) allowed.push(url.origin); } catch {}
     }
+    for (const host of [process.env.VERCEL_URL, process.env.VERCEL_BRANCH_URL, process.env.VERCEL_PROJECT_PRODUCTION_URL]) {
+      if (!host || !/^[a-zA-Z0-9.-]+$/.test(host)) continue;
+      allowed.push(`https://${host}`);
+    }
     return allowed.includes(origin);
   } catch { return false; }
 }
+

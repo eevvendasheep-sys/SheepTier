@@ -33,21 +33,15 @@ export default function PublicHome() {
       if (stopped || loading || document.visibilityState === "hidden") return;
       loading = true;
       try {
-      const [s, g, t, p, r] = await Promise.all([
-        client.from("site_settings").select("*").eq("id", 1).maybeSingle(),
-        client.from("gamemodes").select("*").eq("enabled", true).order("sort_order"),
-        client.from("tiers").select("*").order("sort_order"),
-        client.from("players").select("*").order("username"),
-        client.from("rankings").select("*")
-      ]);
-      const firstError = [s, g, t, p, r].find(result => result.error)?.error;
-      if (firstError) throw new Error(firstError.message);
+      const response = await fetch('/api/leaderboard');
+      if (!response.ok) throw new Error('Classement indisponible.');
+      const data = await response.json();
       if (stopped) return;
-      if (s.data) setSettings(s.data as SiteSettings);
-      if (g.data) setModes(g.data as GameMode[]);
-      if (t.data) setTiers(t.data as Tier[]);
-      if (p.data) setPlayers(p.data as Player[]);
-      if (r.data) setRankings(r.data as Ranking[]);
+      if (data.settings) setSettings(data.settings as SiteSettings);
+      setModes(data.modes as GameMode[]);
+      setTiers(data.tiers as Tier[]);
+      setPlayers(data.players as Player[]);
+      setRankings(data.rankings as Ranking[]);
       setIsDemo(false);
       setLoadError("");
       } finally { loading = false; }
